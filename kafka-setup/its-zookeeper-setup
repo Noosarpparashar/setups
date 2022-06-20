@@ -1,0 +1,59 @@
+https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121150#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121154#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7165206#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121158#notes
+  
+
+  
+  //Zookeeper setup 
+  Setup ec2 instance- ubuntu
+
+Select one subnet for all threee brokers and assign one private ip in network interface section based on subnet cidr
+Use those three ips in below setup-zookeeper.sh file
+Network security to allow zookeeper ports (2181,2888,3888) Use this security group for all three zookeepers
+For all above 3 ports allow for their cidr what was in subnet and allow port 22 for your personal ip
+  Follow setup-1-zookeeper-single.sh
+  Assuming /etc/hosts is added in the instanec after that
+  //Zookeeper Quorum setup
+  Create AMI and launch 2 similar above instance
+ Associate private ip
+ Attach same security  group
+ WHile doing ssh make sure you change ec2 with ubuntu
+ssh -i "msk-serverless-kp.pem" ubuntu@ec2-54-147-40-19.compute-1.amazonaws.com
+
+
+Styart zookeeper in all three instances
+connect other 2 whihc each instance 
+nc -vz zookeeper 2181
+
+Follow setup-2-zookeeper-quorum
+sudo mkdir -p /data/zookeeper
+sudo chown -R ubuntu:ubuntu /data/
+# declare the server's identity
+echo "1" > /data/zookeeper/myid
+//Change config/zookeepr.properties
+THis should be inside zookeeper.properties
+# the location to store the in-memory database snapshots and, unless specified otherwise, the transaction log of updates to the database.
+dataDir=/data/zookeeper
+# the port at which the clients will connect
+clientPort=2181
+# disable the per-ip limit on the number of connections since this is a non-production config
+maxClientCnxns=0
+# the basic time unit in milliseconds used by ZooKeeper. It is used to do heartbeats and the minimum session timeout will be twice the tickTime.
+tickTime=2000
+# The number of ticks that the initial synchronization phase can take
+initLimit=10
+# The number of ticks that can pass between
+# sending a request and getting an acknowledgement
+syncLimit=5
+# zoo servers
+# these hostnames such as `zookeeper-1` come from the /etc/hosts file
+server.1=zookeeper1:2888:3888
+server.2=zookeeper2:2888:3888
+server.3=zookeeper3:2888:3888
+
+Start zookeeper
+
+echo "stat" | nc localhost 2181 ; echo
+bin/zookeeper-server-start.sh  config/zookeeper.properties
+bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
