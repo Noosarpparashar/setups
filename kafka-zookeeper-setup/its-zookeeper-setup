@@ -1,0 +1,155 @@
+https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121150#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121154#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7165206#notes
+ https://ibm-learning.udemy.com/course/kafka-cluster-setup/learn/lecture/7121158#notes
+  
+
+  
+  //Zookeeper setup 
+  Setup ec2 instance- ubuntu
+
+Select one subnet for all threee brokers and assign one private ip in network interface section based on subnet cidr
+Use those three ips in below setup-zookeeper.sh file
+Network security to allow zookeeper ports (2181,2888,3888) Use this security group for all three zookeepers
+For all above 3 ports allow for their cidr what was in subnet and allow port 22 for your personal ip
+  Follow setup-1-zookeeper-single.sh
+  Assuming /etc/hosts is added in the instanec after that
+  //Zookeeper Quorum setup
+  Create AMI and launch 2 similar above instance
+ Associate private ip
+ Attach same security  group
+ WHile doing ssh make sure you change ec2 with ubuntu
+ssh -i "msk-serverless-kp.pem" ubuntu@ec2-54-147-40-19.compute-1.amazonaws.com
+
+
+Styart zookeeper in all three instances
+connect other 2 whihc each instance 
+nc -vz zookeeper 2181
+
+Follow setup-2-zookeeper-quorum
+sudo mkdir -p /data/zookeeper
+sudo chown -R ubuntu:ubuntu /data/
+# declare the server's identity
+echo "1" > /data/zookeeper/myid
+//Change config/zookeepr.properties
+THis should be inside zookeeper.properties
+# the location to store the in-memory database snapshots and, unless specified otherwise, the transaction log of updates to the database.
+dataDir=/data/zookeeper
+# the port at which the clients will connect
+clientPort=2181
+# disable the per-ip limit on the number of connections since this is a non-production config
+maxClientCnxns=0
+# the basic time unit in milliseconds used by ZooKeeper. It is used to do heartbeats and the minimum session timeout will be twice the tickTime.
+tickTime=2000
+# The number of ticks that the initial synchronization phase can take
+initLimit=10
+# The number of ticks that can pass between
+# sending a request and getting an acknowledgement
+syncLimit=5
+# zoo servers
+# these hostnames such as `zookeeper-1` come from the /etc/hosts file
+server.1=zookeeper1:2888:3888
+server.2=zookeeper2:2888:3888
+server.3=zookeeper3:2888:3888
+
+Start zookeeper
+
+echo "stat" | nc localhost 2181 ; echo
+bin/zookeeper-server-start.sh  config/zookeeper.properties
+bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+
+Network security to allow kafka 9092 port
+Create and Attach ebs in respective availability zone
+
+Mount volume as given in kafka-ebs.sh or below
+--------------------------------------------------------------------------------------
+#!/bin/bash
+
+# execute commands as root
+sudo su
+
+# Attach the EBS volume in the console, then
+# view available disks
+lsblk
+
+# we verify the disk is empty - should return "data"
+file -s /dev/xvdf
+
+# Note on Kafka: it's better to format volumes as xfs:
+# https://kafka.apache.org/documentation/#filesystems
+# Install packages to mount as xfs
+apt-get install -y xfsprogs
+
+# create a partition
+fdisk /dev/xvdf
+
+# format as xfs
+mkfs.xfs -f /dev/xvdf
+
+# create kafka directory
+mkdir /data/kafka
+# mount volume
+mount -t xfs /dev/xvdf /data/kafka
+# add permissions to kafka directory
+chown -R ubuntu:ubuntu /data/kafka
+# check it's working
+df -h /data/kafka
+
+# EBS Automount On Reboot
+cp /etc/fstab /etc/fstab.bak # backup
+echo '/dev/xvdf /data/kafka xfs defaults 0 0' >> /etc/fstab
+
+# reboot to test actions
+reboot
+sudo service zookeeper start
+-----------------------------------------------------------------------------------------
+Goto Kafka-single.sh or use below
+-----------------------------------------------------------------------------------------
+#!/bin/bash
+
+# Add file limits configs - allow to open 100,000 file descriptors
+echo "* hard nofile 100000
+* soft nofile 100000" | sudo tee --append /etc/security/limits.conf
+
+# reboot for the file limit to be taken into account
+sudo reboot
+sudo service zookeeper start
+sudo chown -R ubuntu:ubuntu /data/kafka
+
+# edit kafka configuration
+rm config/server.properties
+nano config/server.properties
+#Check file server.properties
+# launch kafka
+
+bin/kafka-server-start.sh config/server.properties
+
+# Install Kafka boot scripts
+sudo nano /etc/init.d/kafka
+sudo chmod +x /etc/init.d/kafka
+sudo chown root:root /etc/init.d/kafka
+# you can safely ignore the warning
+sudo update-rc.d kafka defaults
+
+# start kafka
+sudo service kafka start
+# verify it's working
+nc -vz localhost 9092
+# look at the server logs
+cat /home/ubuntu/kafka/logs/server.log
+
+
+# create a topic
+bin/kafka-topics.sh --zookeeper zookeeper1:2181/kafka --create --topic first_topic --replication-factor 1 --partitions 3
+# produce data to the topic
+bin/kafka-console-producer.sh --broker-list kafka1:9092 --topic first_topic
+hi
+hello
+(exit)
+# read that data
+bin/kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic first_topic --from-beginning
+# list kafka topics
+bin/kafka-topics.sh --zookeeper zookeeper1:2181/kafka --list
+-----To connect your kafka on ec2 with local----
+Need to change advertised listener and listener
+See config in server_prop_local_aws_Ec2
