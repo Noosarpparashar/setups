@@ -1,0 +1,124 @@
+connector.json will give data along with op column
+connector2.json will give just new data which it finds
+------------------------------------------
+Setup kafka on EC2 instancce
+OPen port 9092 from where u r sending messages i.e. kafka connect ec2
+
+
+------------------------------------------
+Setup one ec2 for kafka connect that is debezium
+URL followed https://garrett-jester.medium.com/build-a-real-time-backend-infrastructure-with-aws-msk-rds-ec2-and-debezium-1900c3ee5e67
+
+INstall Kafka connect
+Install Kafka Connect
+Run the following commands to install the confluent hub:
+
+sudo apt-get update
+wget -qO - https://packages.confluent.io/deb/5.3/archive.key | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://packages.confluent.io/deb/5.3 stable main"
+sudo apt-get update && sudo apt-get install confluent-hub-client confluent-common confluent-kafka-2.12
+
+sudo nano /etc/kafka/connect-distributed.properties
+bootstrap.servers=${COPIED_BOOTSTRAP_SERVER_ADDRESSES}
+group.id=debezium-cluster
+offset.storage.replication.factor=2
+config.storage.replication.factor=2
+status.storage.replication.factor=2
+plugin.path=/usr/share/java,/usr/share/confluent-hub-components
+
+; CReate directory inside /usr/share/java and you can add rest of the plugins
+; To install schema registry
+; wget https://repo1.maven.org/maven2/io/apicurio/apicurio-registry-distro-connect-converter/2.1.5.Final/apicurio-registry-distro-connect-converter-2.1.5.Final.tar.gz
+
+
+
+sudo nano /lib/systemd/system/confluent-connect-distributed.service
+[Unit]
+Description=Apache Kafka - connect-distributed
+Documentation=http://docs.confluent.io/
+After=network.target
+[Service]
+Type=simple
+User=cp-kafka
+Group=confluent
+ExecStart=/usr/bin/connect-distributed /etc/kafka/connect-distributed.properties
+TimeoutStopSec=180
+Restart=no
+[Install]
+WantedBy=multi-user.target
+
+Now we’ll install the Debezium PostgreSQL Connector.
+
+sudo confluent-hub install debezium/debezium-connector-postgresql:latest
+And start Kafka Connect using systemctl:
+
+sudo systemctl enable confluent-connect-distributed
+sudo systemctl start confluent-connect-distributed
+
+
+Create a JSON config for the PostgreSQL connector:
+
+nano postgres.json
+{
+"name": "debezium-pg-connector",
+"config": {
+  "name": "debezium-pg-connector",
+  "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+  "database.server.id": "1",
+  "tasks.max": "1",
+  "slot.name": "debezium"
+  "database.history.kafka.bootstrap.servers": [BOOTSTRAP_SERVERS]
+  "database.server.name": "khyber",
+  "database.dbname": "postgres",
+  "database.hostname": [RDS_ENDPOINT],
+  "database.port": "5432",
+  "database.user": "debezium",
+  "database.password": [MY_PASSWORD],
+  "plugin.name": "pgoutput",
+  "internal.key.converter.schemas.enable": "false",
+  "transforms.unwrap.add.source.fields": "ts_ms",
+  "key.converter.schemas.enable": "false",
+  "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "heartbeat.interval.ms": "30000",
+  "heartbeat.action.query": "INSERT INTO debezium_heartbeat (heartbeat) VALUES ('thump')",
+  "internal.value.converter.schemas.enable": "false",
+  "value.converter.schemas.enable": "false",
+  "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+  "transforms": "unwrap",
+  "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+ }
+}
+
+
+curl -X POST -H "Accept: application/json" -H "Content-Type: application/json" http://localhost:8083/connectors -d @postgres.json
+
+
+--Setup postgres
+
+Go to Parameter Groups from the RDS Dashboard and click Create Parameter Group.
+Name this parameter group something like cdc-enabled-postgres, locate the option with the key rds.logical_replication and set the value to 1. Click Create Parameter Group.
+If your DB instance status has transitioned to ‘available’, click Modify.
+Scroll to Additional Configuration, set the initial database name to postgres and switch the parameter group to the one you just created.
+Schedule the modifications to take effect immediately and click Modify Instance. Your instance state will transition to ‘Modifying’.
+Once the instance is modified you’ll need to reboot it for the rds.logical_replication setting to update. Select your instance, then click Actions > Reboot.
+
+SHOW wal_level;
+Output of this should be logical not replica
+
+Now we’ll configure a postgres user with the required Debezium permissions:
+
+CREATE role debezium WITH PASSWORD 'mypassword' login;
+GRANT rds_superuser TO debezium;
+GRANT SELECT ON ALL TABLES IN SCHEMA public to debezium;
+GRANT CREATE ON DATABASE postgres TO debezium;
+Finally, we need to configure a table to receive ‘heartbeat’ messages from Debezium. Heartbeat messages help solve a known issue with the Postgres connector which can cause the DB instance to run out of storage.
+
+CREATE TABLE debezium_heartbeat (heartbeat VARCHAR NOT NULL)
+
+
+//Install apicurio schema registry using docker 
+https://www.apicur.io/registry/docs/apicurio-registry/2.2.x/getting-started/assembly-installing-registry-docker.html#installing-registry-in-memory-storage_registry
+
+docker run -it -p 8080:8080 apicurio/apicurio-registry-mem:VERSION

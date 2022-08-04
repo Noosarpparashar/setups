@@ -1,0 +1,13 @@
+SetupKafka on AWSCE2 single instance https://www.linkedin.com/pulse/installing-apache-kafka-ubuntu-2004-lts-aws-dhruv-sahu/
+--CReate topics
+bin/kafka-topics.sh --create --topic quickstart-events --bootstrap-server ec2-54-234-83-118.compute-1.amazonaws.com:9092
+--LIst topics
+bin/kafka-topics.sh --bootstrap-server ec2-54-234-83-118.compute-1.amazonaws.com:9092 --list
+
+
+
+Visit this Github repo :-https://github.com/cevoaustralia/data-lake-demo
+To have debezium on AWS EC2:-  https://garrett-jester.medium.com/build-a-real-time-backend-infrastructure-with-aws-msk-rds-ec2-and-debezium-1900c3ee5e67
+
+LInkedin for debezium schema registry
+https://thedataguy.in/integrate-debezium-and-sink-connectors-with-aws-glue-schema-registry/

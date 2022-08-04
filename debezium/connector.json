@@ -1,0 +1,21 @@
+{
+    "name": "debezium-pg-connector3",
+    "config": {
+      "name": "debezium-pg-connector3",
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "database.server.id": "1",
+      "tasks.max": "1",
+      "slot.name": "debezium",
+      "database.history.kafka.bootstrap.servers": "ec2-3-92-51-31.compute-1.amazonaws.com:9092",
+      "database.server.name": "connector3",
+      "database.dbname": "postgres",
+      "database.hostname": "database-1.c6vrj3gbkajn.us-east-1.rds.amazonaws.com",
+      "database.port": "5432",
+      "database.user": "debezium",
+      "database.password": "mypassword",
+      "plugin.name": "pgoutput"
+     }
+    }
+    
+    
+    

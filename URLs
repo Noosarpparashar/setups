@@ -1,0 +1,18 @@
+https://towardsaws.com/deploying-kafka-schema-registry-using-sasl-scram-authentication-on-aws-eks-eb7f763d5221
+
+https://www.cloudkarafka.com/docs/schemaregistry.html
+Schema Registry https://github.com/marcosschroh/python-schema-registry-client/
+
+Schema Registry actuyal code python https://marcosschroh.github.io/python-schema-registry-client/
+
+docker run --rm -it -p 8000:8000 \
+       -e "SCHEMAREGISTRY_URL=http://ec2-44-201-88-166.compute-1.amazonaws.com:8081/" \
+       landoop/schema-registry-ui
+
+docker run -d --net=host \
+       -e ID=01 \
+       -e BS=ec2-54-234-83-118.compute-1.amazonaws.com:9092 \
+       -e ZK=ec2-54-234-83-118.compute-1.amazonaws.com:2181 \
+       -e SR=ec2-44-201-88-166.compute-1.amazonaws.com:8081 \
+       -e HOST=ec2-3-84-53-226.compute-1.amazonaws.com \
+       landoop/fast-data-dev-connect-cluster

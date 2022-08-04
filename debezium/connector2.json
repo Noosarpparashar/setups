@@ -1,0 +1,32 @@
+{
+    "name": "debezium-pg-connector",
+    "config": {
+      "name": "debezium-pg-connector",
+      "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+      "database.server.id": "1",
+      "tasks.max": "1",
+      "slot.name": "debezium",
+      "database.history.kafka.bootstrap.servers": "ec2-54-234-83-118.compute-1.amazonaws.com:9092",
+      "database.server.name": "khyber",
+      "database.dbname": "postgres",
+      "database.hostname": "database-1.c6vrj3gbkajn.us-east-1.rds.amazonaws.com",
+      "database.port": "5432",
+      "database.user": "debezium",
+      "database.password": "mypassword",
+      "plugin.name": "pgoutput",
+      "internal.key.converter.schemas.enable": "false",
+      "transforms.unwrap.add.source.fields": "ts_ms",
+      "key.converter.schemas.enable": "false",
+      "internal.key.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "heartbeat.interval.ms": "30000",
+      "heartbeat.action.query": "INSERT INTO debezium_heartbeat (heartbeat) VALUES ('thump')",
+      "internal.value.converter.schemas.enable": "false",
+      "value.converter.schemas.enable": "false",
+      "internal.value.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+      "transforms": "unwrap",
+      "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState"
+     }
+    }
+    

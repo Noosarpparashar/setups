@@ -33,6 +33,7 @@ cat /home/ubuntu/kafka/logs/server.log
 
 # create a topic
 bin/kafka-topics.sh --zookeeper zookeeper1:2181/kafka --create --topic first_topic --replication-factor 1 --partitions 3
+bin/kafka-topics.sh --create --topic quickstart-events --bootstrap-server ec2-56-244-43-118.compute-1.amazonaws.com:9092
 # produce data to the topic
 bin/kafka-console-producer.sh --broker-list kafka1:9092 --topic first_topic
 hi

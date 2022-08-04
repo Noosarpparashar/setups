@@ -150,6 +150,30 @@ hello
 bin/kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic first_topic --from-beginning
 # list kafka topics
 bin/kafka-topics.sh --zookeeper zookeeper1:2181/kafka --list
+
+
 -----To connect your kafka on ec2 with local----
 Need to change advertised listener and listener
 See config in server_prop_local_aws_Ec2
+
+
+
+
+-------------Setup on single aws ec2-----------------
+1  sudo apt update 
+    2  sudo apt install default-jdk
+    3  java --version
+    4  wget https://dlcdn.apache.org/kafka/3.2.0/kafka_2.13-3.2.0.tgz 
+    5  tar xzf kafka_2.13-3.2.0.tgz 
+    6  l
+    7  pwd
+    8  sudo mv kafka_2.13-3.2.0 /home/ubuntu/kafka
+    9  cd kafka/
+   24  bin/zookeeper-server-start.sh  config/zookeeper.properties
+   26  bin/zookeeper-server-start.sh -daemon config/zookeeper.properties
+   27  bin/kafka-server-start.sh config/server.properties
+   28  bin/kafka-server-start.sh -daemon config/server.properties
+   30  bin/kafka-topics.sh  --create --bootstrap-server localhost:9092 --topic first_topic --replication-factor 1 --partitions 3
+   32  bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+   bin/kafka-console-consumer.sh --bootstrap-server kafka1:9092 --topic first_topic --from-beginning
+

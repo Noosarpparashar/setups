@@ -1,0 +1,35 @@
+version: '2'
+services:
+  lenses:
+    image: lensesio/lenses:4.2
+    environment:
+      LENSES_PORT: 9991
+      LENSES_KAFKA_BROKERS: "PLAINTEXT://ec2-54-234-83-118.compute-1.amazonaws.com:9092"
+      LENSES_ZOOKEEPER_HOSTS: |
+        [
+          {url:"ec2-54-234-83-118.compute-1.amazonaws.com:2181"}
+        ]        
+      LENSES_SCHEMA_REGISTRY_URLS: |
+        [
+          {url:"http://ec2-44-201-88-166.compute-1.amazonaws.com:8081"}
+        ]        
+      LENSES_KAFKA_CONNECT_CLUSTERS: |
+        [
+          {
+            name:"data_science",
+            urls: [
+              {url:"ec2-44-201-88-166.compute-1.amazonaws.com:8083"}
+            ],
+            statuses:"connect-statuses-cluster-a",
+            configs:"connect-configs-cluster-a",
+            offsets:"connect-offsets-cluster-a"
+          }
+        ]        
+      LENSES_SECURITY_USER: admin
+      LENSES_SECURITY_PASSWORD: sha256:8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+    ports:
+      - 9991:9991
+      - 9102:9102
+    volumes:
+      - ./license.json:/license.json
+    network_mode: host
